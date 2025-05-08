@@ -27,7 +27,7 @@ public class OtpDao {
             stmt.setTimestamp(5, Timestamp.valueOf(otp.createdAt));
             stmt.setTimestamp(6, Timestamp.valueOf(otp.expiresAt));
             stmt.executeUpdate();
-            logger.info("Saved OTP code for userId: {}, operationId: {}", otp.userId, otp.operationId);
+            logger.debug("Saved OTP code for userId: {}, operationId: {}", otp.userId, otp.operationId);
         } catch (SQLException e) {
             logger.error("Error saving OTP code for userId: {}: {}", otp.userId, e.getMessage(), e);
         }
@@ -48,7 +48,7 @@ public class OtpDao {
                 otp.operationId = rs.getString("operation_id");
                 otp.createdAt = rs.getTimestamp("created_at").toLocalDateTime();
                 otp.expiresAt = rs.getTimestamp("expires_at").toLocalDateTime();
-                logger.info("Found active OTP code for userId: {}, operationId: {}", userId, operationId);
+                logger.debug("Found active OTP code for userId: {}, operationId: {}", userId, operationId);
                 return Optional.of(otp);
             } else {
                 logger.warn("No active OTP code found for userId: {}, operationId: {}", userId, operationId);
@@ -65,7 +65,7 @@ public class OtpDao {
             stmt.setString(1, status);
             stmt.setObject(2, id, java.sql.Types.OTHER);
             stmt.executeUpdate();
-            logger.info("Updated OTP code status to '{}' for id: {}", status, id);
+            logger.debug("Updated OTP code status to '{}' for id: {}", status, id);
         } catch (SQLException e) {
             logger.error("Error updating OTP code status for id: {}: {}", id, e.getMessage(), e);
         }
@@ -75,7 +75,7 @@ public class OtpDao {
         String sql = "UPDATE otp_codes SET status = 'EXPIRED' WHERE status = 'ACTIVE' AND expires_at < now()";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             int updatedRows = stmt.executeUpdate();
-            logger.info("Expired {} old OTP codes.", updatedRows);
+            logger.debug("Expired {} old OTP codes.", updatedRows);
         } catch (SQLException e) {
             logger.error("Error expiring old OTP codes: {}", e.getMessage(), e);
         }
@@ -86,7 +86,7 @@ public class OtpDao {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setObject(1, userId, java.sql.Types.OTHER);
             stmt.executeUpdate();
-            logger.info("Deleted OTP codes for userId: {}", userId);
+            logger.debug("Deleted OTP codes for userId: {}", userId);
         } catch (SQLException e) {
             logger.error("Error deleting OTP codes for userId {}: {}", userId, e.getMessage(), e);
             throw e;

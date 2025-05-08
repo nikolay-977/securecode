@@ -5,10 +5,9 @@ import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.skillfactory.securecode.dao.OtpConfigDao;
-import ru.skillfactory.securecode.dao.OtpDao;
-import ru.skillfactory.securecode.dao.UserDao;
 import ru.skillfactory.securecode.model.OtpCode;
+import ru.skillfactory.securecode.model.User;
+import ru.skillfactory.securecode.service.AuthenticationService;
 import ru.skillfactory.securecode.service.OtpExpirationService;
 import ru.skillfactory.securecode.service.OtpService;
 import ru.skillfactory.securecode.service.SenderService;
@@ -28,15 +27,14 @@ public class GenerateOtpHandler implements HttpHandler {
     private final OtpService otpService;
     private final SenderService senderService;
     private final OtpExpirationService otpExpirationService;
+    private final AuthenticationService authenticationService;
 
     public GenerateOtpHandler(Connection connection) {
-        OtpDao otpDao = new OtpDao(connection);
-        UserDao userDao = new UserDao(connection);
-        OtpConfigDao otpConfigDao = new OtpConfigDao(connection);
-        this.otpService = new OtpService(otpDao, otpConfigDao);
-        this.senderService = new SenderService(userDao);
-        this.otpExpirationService = new OtpExpirationService(otpDao);
+        this.otpService = new OtpService(connection);
+        this.senderService = new SenderService(connection);
+        this.otpExpirationService = new OtpExpirationService(connection);
         this.otpExpirationService.start();
+        this.authenticationService = new AuthenticationService(connection);
         logger.info("GenerateOtpHandler initialized.");
     }
 
@@ -50,33 +48,55 @@ public class GenerateOtpHandler implements HttpHandler {
             return;
         }
 
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
-            String requestBody = reader.lines().collect(Collectors.joining("\n"));
-            logger.debug("Request body: {}", requestBody);
+        try {
+            String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                logger.warn("Missing or invalid Authorization header");
+                sendResponse(exchange, 401, "{\"message\": \"Unauthorized\"}");
+                return;
+            }
 
-            JSONObject json = new JSONObject(requestBody);
-            UUID userId = UUID.fromString(json.getString("userId"));
-            String operationId = json.optString("operationId", UUID.randomUUID().toString());
+            String token = authHeader.substring("Bearer ".length());
+            User authUser = authenticationService.findUserByToken(token);
+            if (authUser == null) {
+                logger.warn("Invalid token: {}", token);
+                sendResponse(exchange, 401, "{\"message\": \"Unauthorized\"}");
+                return;
+            }
 
-            logger.info("Generating OTP for userId: {}, operationId: {}", userId, operationId);
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                String requestBody = reader.lines().collect(Collectors.joining("\n"));
+                logger.debug("Request body: {}", requestBody);
 
-            OtpCode otpCode = otpService.generateAndPersistOtpWithFile(userId, operationId);
+                JSONObject json = new JSONObject(requestBody);
+                UUID userId = UUID.fromString(json.getString("userId"));
 
-            JSONObject response = new JSONObject();
-            response.put("message", "OTP code generated and saved to file.");
-            response.put("operationId", otpCode.operationId);
+                // Проверка соответствия токена и userId
+                if (!userId.equals(authUser.id)) {
+                    logger.warn("Access denied: token userId {} does not match requested userId {}", authUser.id, userId);
+                    sendResponse(exchange, 403, "{\"message\": \"Forbidden: Access denied.\"}");
+                    return;
+                }
 
-            sendResponse(exchange, 200, response.toString());
+                String operationId = json.optString("operationId", UUID.randomUUID().toString());
+                logger.info("Generating OTP for userId: {}, operationId: {}", userId, operationId);
 
-            logger.info("Sending OTP to userId: {}", userId);
-            senderService.sendOtp(userId, otpCode.code);
+                OtpCode otpCode = otpService.generateAndPersistOtpWithFile(userId, operationId);
+
+                JSONObject response = new JSONObject();
+                response.put("message", "OTP code generated and saved to file.");
+                response.put("operationId", otpCode.operationId);
+
+                sendResponse(exchange, 200, response.toString());
+
+                logger.info("Sending OTP to userId: {}", userId);
+                senderService.sendOtp(userId, otpCode.code);
+            }
+
         } catch (Exception e) {
             logger.error("Error handling OTP generation request", e);
-            sendResponse(exchange, 500, "{\n" +
-                    "  \"status\": \"fail\",\n" +
-                    "  \"message\": \"Internal server error.\"\n" +
-                    "}");
+            sendResponse(exchange, 500, "{ \"status\": \"fail\", \"message\": \"Internal server error.\" }");
         }
     }
 

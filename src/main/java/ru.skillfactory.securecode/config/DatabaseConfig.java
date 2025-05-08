@@ -16,7 +16,7 @@ public class DatabaseConfig {
     public static Connection initializeDatabase() {
         try (InputStream input = DatabaseConfig.class.getClassLoader().getResourceAsStream("db.properties")) {
             if (input == null) {
-                logger.error("Unable to find db.properties file.");
+                logger.debug("Unable to find db.properties file.");
                 return null;
             }
 
@@ -27,9 +27,9 @@ public class DatabaseConfig {
             String user = prop.getProperty("db.user");
             String password = prop.getProperty("db.password");
 
-            logger.info("Attempting to connect to the database at {}", url);
+            logger.debug("Attempting to connect to the database at {}", url);
             Connection connection = DriverManager.getConnection(url, user, password);
-            logger.info("Database connection established successfully.");
+            logger.debug("Database connection established successfully.");
             return connection;
         } catch (IOException ex) {
             logger.error("Error loading database properties: {}", ex.getMessage(), ex);

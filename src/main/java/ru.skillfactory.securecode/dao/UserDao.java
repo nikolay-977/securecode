@@ -31,7 +31,7 @@ public class UserDao {
             stmt.setString(5, user.email);
             stmt.setString(6, user.telegramId);
             stmt.executeUpdate();
-            logger.info("Successfully registered new user with login: {}", user.login);
+            logger.debug("Successfully registered new user with login: {}", user.login);
         } catch (SQLException e) {
             logger.error("Error registering user {}: {}", user.login, e.getMessage(), e);
             throw e;
@@ -66,7 +66,7 @@ public class UserDao {
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 User user = mapUserFromResultSet(rs);
-                logger.info("User found by ID: {}", id);
+                logger.debug("User found by ID: {}", id);
                 return user;
             } else {
                 logger.warn("No user found with ID: {}", id);
@@ -85,7 +85,7 @@ public class UserDao {
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 boolean exists = rs.getInt(1) > 0;
-                logger.info("Admin existence check result: {}", exists);
+                logger.debug("Admin existence check result: {}", exists);
                 return exists;
             }
         } catch (SQLException e) {
@@ -104,7 +104,7 @@ public class UserDao {
             while (rs.next()) {
                 users.add(mapUserFromResultSet(rs));
             }
-            logger.info("Found {} users excluding admins", users.size());
+            logger.debug("Found {} users excluding admins", users.size());
         } catch (SQLException e) {
             logger.error("Error finding users excluding admins: {}", e.getMessage(), e);
             throw e;
@@ -119,7 +119,7 @@ public class UserDao {
             stmt.setObject(1, id, java.sql.Types.OTHER);
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
-                logger.info("User with ID {} deleted successfully", id);
+                logger.debug("User with ID {} deleted successfully", id);
             } else {
                 logger.warn("No user found to delete with ID: {}", id);
             }
@@ -139,5 +139,30 @@ public class UserDao {
         user.email = rs.getString("email");
         user.telegramId = rs.getString("telegram_id");
         return user;
+    }
+
+    public User findByToken(String token) throws SQLException {
+        String sql = "SELECT u.* FROM users u " +
+                "JOIN sessions s ON u.id = s.user_id " +
+                "WHERE s.token = ? AND s.created_at > NOW() - INTERVAL '1 DAY'"; // Токен действителен 1 день
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, token);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    User user = new User();
+                    user.id = UUID.fromString(rs.getString("id"));
+                    user.login = rs.getString("login");
+                    user.passwordHash = rs.getString("password_hash");
+                    user.role = rs.getString("role");
+                    user.phone = rs.getString("phone");
+                    user.email = rs.getString("email");
+                    user.telegramId = rs.getString("telegram_id");
+                    return user;
+                }
+            }
+        }
+        return null;
     }
 }

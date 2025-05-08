@@ -61,3 +61,18 @@ create index idx_otp_user_operation
 
 create index idx_otp_status
     on otp_codes (status);
+
+create table sessions
+(
+    id         uuid         not null
+        primary key,
+    user_id    uuid
+        references users
+            on delete cascade,
+    token      varchar(255) not null,
+    created_at timestamp default CURRENT_TIMESTAMP
+);
+
+alter table sessions
+    owner to "user";
+

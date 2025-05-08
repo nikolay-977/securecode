@@ -2,6 +2,7 @@ package ru.skillfactory.securecode.service;
 
 import ru.skillfactory.securecode.dao.OtpDao;
 
+import java.sql.Connection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -13,8 +14,8 @@ public class OtpExpirationService {
     private final ScheduledExecutorService scheduler;
     private final long checkIntervalSeconds;
 
-    public OtpExpirationService(OtpDao otpDao) {
-        this.otpDao = otpDao;
+    public OtpExpirationService(Connection connection) {
+        this.otpDao = new OtpDao(connection);
         this.checkIntervalSeconds = CHECK_INTERVALS_SECONDS;
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }

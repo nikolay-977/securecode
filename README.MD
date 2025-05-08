@@ -111,7 +111,8 @@ create index idx_otp_status
 ## Основные команды API
 
 ### 1. Регистрация пользователя
-   POST /register
+
+POST /register
 
 Регистрирует нового пользователя в системе.
 
@@ -158,11 +159,13 @@ create index idx_otp_status
    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJVc2VyXzZ0cUF1YXNySVkiLCJyb2xlIjoiVVNFUiIsImV4cCI6MTc0NjczOTMzMX0.7JHyjBPT-dBGUhcVzeJjG29KBUmq46sNdD5kuqeAacE"
 }
 ```
+
 ### 3. Изменение конфигурации OTP POST /admin
 
 Изменяет настройки конфигурации OTP-кодов (длина кода и TTL).
 
 Тело запроса:
+
 ```
 {
   "action": "updateOtpConfig",
@@ -180,6 +183,7 @@ create index idx_otp_status
 }
 
 ```
+
 ### 4. Получение списка пользователей (только для администраторов)  POST /admin
 
 Получение списка всех пользователей, кроме администраторов.
@@ -296,6 +300,7 @@ create index idx_otp_status
 ```
 
 ## Каналы рассылки OTP-кодов
+
 Email — Используется эмулятор почтовой службы или реальная почта для отправки кодов.
 
 SMS — Эмулятор SMS-отправки для тестирования.
@@ -305,21 +310,26 @@ Telegram — Используется Telegram-бот для отправки к
 Сохранение в файл — Код сохраняется в файл в корне проекта.
 
 ## Задачи фоновой обработки
+
 Каждые 60 секунд в сервисе запускается задача, которая проверяет просроченные OTP-коды и обновляет их статус на EXPIRED.
 
 ## Логирование
+
 Логирование осуществляется с использованием библиотеки SLF4J и Logback.
 
 ## Как запустить проект
+
 Настройте базу данных PostgreSQL. [create_tables.sql](create_tables.sql)
 
 Соберите проект с помощью Gradle.
 
 Gradle:
+
 ```bash
 gradle build
 gradle run
 ```
+
 Приложение будет доступно по адресу http://localhost:8000.
 
 ## Тестирование

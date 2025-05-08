@@ -5,7 +5,6 @@ import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.skillfactory.securecode.dao.UserDao;
 import ru.skillfactory.securecode.service.LoginService;
 
 import java.io.BufferedReader;
@@ -23,7 +22,8 @@ public class LoginHandler implements HttpHandler {
     private final LoginService loginService;
 
     public LoginHandler(Connection connection) {
-        this.loginService = new LoginService(new UserDao(connection));
+        this.loginService = new LoginService(connection);
+        logger.info("LoginHandler initialized.");
     }
 
     @Override

@@ -11,6 +11,7 @@ import ru.skillfactory.securecode.model.User;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.Connection;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -20,21 +21,27 @@ import static ru.skillfactory.securecode.config.Config.EXPIRATION_TIME;
 public class LoginService {
     private static final Logger logger = LoggerFactory.getLogger(LoginService.class);
     private final UserDao userDao;
+    private final AuthenticationService authService;
     private final SecretKey secretKey;
 
-    public LoginService(UserDao userDao) {
-        this.userDao = userDao;
+    public LoginService(Connection connection) {
+        this.userDao = new UserDao(connection);
+        this.authService = new AuthenticationService(connection);
         this.secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        logger.info("LoginService initialized with secure JWT key.");
+        logger.debug("LoginService initialized with secure JWT key.");
     }
 
     public HashMap<String, String> authenticate(String login, String password) throws Exception {
         logger.info("Authenticating user with login: {}", login);
         User user = userDao.findByLogin(login);
+
         if (user != null && user.passwordHash.equals(hashPassword(password))) {
             logger.info("Authentication successful for user: {}", login);
-            HashMap<String, String> map = new HashMap<>();
+
             String token = generateToken(user);
+            authService.saveSession(token, user.id); // сохраняем токен в БД
+
+            HashMap<String, String> map = new HashMap<>();
             map.put("token", token);
             map.put("userId", user.id.toString());
             return map;

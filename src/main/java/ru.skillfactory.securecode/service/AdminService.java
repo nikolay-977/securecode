@@ -7,6 +7,7 @@ import ru.skillfactory.securecode.dao.OtpDao;
 import ru.skillfactory.securecode.dao.UserDao;
 import ru.skillfactory.securecode.model.User;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -17,29 +18,29 @@ public class AdminService {
     private final OtpDao otpDao;
     private final OtpConfigDao otpConfigDao;
 
-    public AdminService(UserDao userDao, OtpDao otpDao, OtpConfigDao otpConfigDao) {
-        this.userDao = userDao;
-        this.otpDao = otpDao;
-        this.otpConfigDao = otpConfigDao;
+    public AdminService(Connection connection) {
+        this.userDao = new UserDao(connection);
+        this.otpDao = new OtpDao(connection);
+        this.otpConfigDao = new OtpConfigDao(connection);
     }
 
     public List<User> listUsers() throws SQLException {
-        logger.info("Fetching list of users excluding admins.");
+        logger.debug("Fetching list of users excluding admins.");
         List<User> users = userDao.findAllUsersExcludingAdmins();
-        logger.info("Fetched {} users.", users.size());
+        logger.debug("Fetched {} users.", users.size());
         return users;
     }
 
     public void deleteUser(UUID userId) throws SQLException {
-        logger.info("Deleting user and their OTPs with ID: {}", userId);
+        logger.debug("Deleting user and their OTPs with ID: {}", userId);
         otpDao.deleteByUserId(userId);
         userDao.deleteById(userId);
-        logger.info("User with ID {} deleted successfully.", userId);
+        logger.debug("User with ID {} deleted successfully.", userId);
     }
 
     public void updateOtpConfig(int codeLength, int ttlSeconds) throws SQLException {
-        logger.info("Updating OTP config with codeLength={} and ttlSeconds={}", codeLength, ttlSeconds);
+        logger.debug("Updating OTP config with codeLength={} and ttlSeconds={}", codeLength, ttlSeconds);
         otpConfigDao.update(codeLength, ttlSeconds);
-        logger.info("OTP configuration updated successfully.");
+        logger.debug("OTP configuration updated successfully.");
     }
 }

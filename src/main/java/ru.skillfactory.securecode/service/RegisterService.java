@@ -8,19 +8,20 @@ import ru.skillfactory.securecode.model.User;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
 import java.sql.SQLException;
 
 public class RegisterService {
     private static final Logger logger = LoggerFactory.getLogger(RegisterService.class);
     private final UserDao userDao;
 
-    public RegisterService(UserDao userDao) {
-        this.userDao = userDao;
-        logger.info("RegisterService initialized");
+    public RegisterService(Connection connection) {
+        this.userDao = new UserDao(connection);
+        logger.debug("RegisterService initialized");
     }
 
     public boolean registerUser(String login, String password, String role, String phone, String email, String telegramId) throws SQLException {
-        logger.info("Attempting to register user with login={}", login);
+        logger.debug("Attempting to register user with login={}", login);
 
         if ("ADMIN".equalsIgnoreCase(role) && userDao.isAdminExists()) {
             logger.warn("Admin user already exists, registration attempt blocked for login={}", login);
@@ -36,7 +37,7 @@ public class RegisterService {
         user.telegramId = telegramId;
 
         userDao.register(user);
-        logger.info("User registered successfully with login={}", login);
+        logger.debug("User registered successfully with login={}", login);
         return true;
     }
 

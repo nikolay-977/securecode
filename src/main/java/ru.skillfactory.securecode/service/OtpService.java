@@ -9,6 +9,7 @@ import ru.skillfactory.securecode.model.OtpCode;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Random;
@@ -25,10 +26,10 @@ public class OtpService {
     private int codeLength;
     private long ttlSeconds;
 
-    public OtpService(OtpDao otpDao, OtpConfigDao otpConfigDao) {
-        this.otpDao = otpDao;
-        this.otpConfigDao = otpConfigDao;
-        logger.info("OtpService initialized");
+    public OtpService(Connection connection) {
+        this.otpDao = new OtpDao(connection);
+        this.otpConfigDao = new OtpConfigDao(connection);
+        logger.debug("OtpService initialized");
     }
 
     private void loadConfig() {
@@ -38,7 +39,7 @@ public class OtpService {
             if (config != null) {
                 codeLength = config.codeLength;
                 ttlSeconds = config.ttlSeconds;
-                logger.info("OTP config loaded from DB: codeLength={}, ttlSeconds={}", codeLength, ttlSeconds);
+                logger.debug("OTP config loaded from DB: codeLength={}, ttlSeconds={}", codeLength, ttlSeconds);
             } else {
                 codeLength = CODE_LENGTH;
                 ttlSeconds = TTL_SECONDS;
@@ -64,14 +65,14 @@ public class OtpService {
         otp.createdAt = now;
         otp.expiresAt = now.plusSeconds(ttlSeconds);
 
-        logger.info("Generated OTP for userId={}, operationId={}", userId, operationId);
+        logger.debug("Generated OTP for userId={}, operationId={}", userId, operationId);
         return otp;
     }
 
     public OtpCode generateAndPersistOtpWithFile(UUID userId, String operationId) {
         OtpCode otp = generateOtp(userId, operationId);
         otpDao.save(otp);
-        logger.info("Persisted OTP for userId={}, operationId={}", userId, operationId);
+        logger.debug("Persisted OTP for userId={}, operationId={}", userId, operationId);
         saveCodeToFile(otp.userId, otp.operationId, otp.code);
         return otp;
     }
@@ -80,7 +81,7 @@ public class OtpService {
         String filename = userId + "_" + operationId + ".otp.txt";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             writer.write("OTP Code: " + code);
-            logger.info("Saved OTP code to file: {}", filename);
+            logger.debug("Saved OTP code to file: {}", filename);
         } catch (IOException e) {
             logger.error("Failed to save OTP code to file: {}", filename, e);
         }

@@ -5,7 +5,6 @@ import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.skillfactory.securecode.dao.UserDao;
 import ru.skillfactory.securecode.service.RegisterService;
 
 import java.io.BufferedReader;
@@ -23,7 +22,8 @@ public class RegisterHandler implements HttpHandler {
     private final RegisterService registerService;
 
     public RegisterHandler(Connection connection) {
-        this.registerService = new RegisterService(new UserDao(connection));
+        this.registerService = new RegisterService(connection);
+        logger.info("RegisterHandler initialized.");
     }
 
     @Override

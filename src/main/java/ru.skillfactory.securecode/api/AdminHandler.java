@@ -6,11 +6,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.skillfactory.securecode.dao.OtpConfigDao;
-import ru.skillfactory.securecode.dao.OtpDao;
-import ru.skillfactory.securecode.dao.UserDao;
 import ru.skillfactory.securecode.model.User;
 import ru.skillfactory.securecode.service.AdminService;
+import ru.skillfactory.securecode.service.AuthenticationService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,16 +23,13 @@ import java.util.stream.Collectors;
 
 public class AdminHandler implements HttpHandler {
     private static final Logger logger = LoggerFactory.getLogger(AdminHandler.class);
-    private final UserDao userDao;
-    private final OtpDao otpDao;
-    private final OtpConfigDao otpConfigDao;
     private final AdminService adminService;
+    private final AuthenticationService authenticationService;
 
     public AdminHandler(Connection connection) {
-        this.userDao = new UserDao(connection);
-        this.otpDao = new OtpDao(connection);
-        this.otpConfigDao = new OtpConfigDao(connection);
-        this.adminService = new AdminService(userDao, otpDao, otpConfigDao);
+        this.adminService = new AdminService(connection);
+        this.authenticationService = new AuthenticationService(connection);
+        logger.info("AdminHandler initialized.");
     }
 
     @Override
@@ -42,6 +37,15 @@ public class AdminHandler implements HttpHandler {
         if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
             logger.warn("Invalid request method: {}", exchange.getRequestMethod());
             exchange.sendResponseHeaders(405, -1);
+            return;
+        }
+
+        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+        String token = authHeader.substring("Bearer ".length());
+
+        if (authHeader == null || !authenticationService.isValidAdminToken(token)) {
+            logger.warn("Unauthorized access attempt");
+            sendResponse(exchange, 403, "{\n\"status\": \"fail\",\n\"message\": \"Unauthorized access. Admin role required.\"\n}");
             return;
         }
 
@@ -103,7 +107,7 @@ public class AdminHandler implements HttpHandler {
 
     private void listUsers(HttpExchange exchange) throws SQLException, IOException {
         List<User> users = adminService.listUsers();
-        logger.info("Received list of users: siz: {}", users.size());
+        logger.info("Received list of users: size: {}", users.size());
 
         JSONArray jsonArray = new JSONArray();
         for (User user : users) {

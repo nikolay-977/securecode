@@ -29,10 +29,10 @@ public class OtpConfigDao {
                     insertStmt.setInt(1, codeLength);
                     insertStmt.setInt(2, ttlSeconds);
                     insertStmt.executeUpdate();
-                    logger.info("Inserted new OTP config: codeLength={}, ttlSeconds={}", codeLength, ttlSeconds);
+                    logger.debug("Inserted new OTP config: codeLength={}, ttlSeconds={}", codeLength, ttlSeconds);
                 }
             } else {
-                logger.info("Updated OTP config: codeLength={}, ttlSeconds={}", codeLength, ttlSeconds);
+                logger.debug("Updated OTP config: codeLength={}, ttlSeconds={}", codeLength, ttlSeconds);
             }
         } catch (SQLException e) {
             logger.error("Error updating OTP config: {}", e.getMessage(), e);
@@ -48,7 +48,7 @@ public class OtpConfigDao {
                 OtpConfig config = new OtpConfig();
                 config.codeLength = rs.getInt("code_length");
                 config.ttlSeconds = rs.getInt("ttl_seconds");
-                logger.info("Retrieved OTP config: codeLength={}, ttlSeconds={}", config.codeLength, config.ttlSeconds);
+                logger.debug("Retrieved OTP config: codeLength={}, ttlSeconds={}", config.codeLength, config.ttlSeconds);
                 return config;
             } else {
                 logger.warn("No OTP config found in the database.");

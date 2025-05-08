@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import ru.skillfactory.securecode.dao.OtpDao;
 import ru.skillfactory.securecode.model.OtpCode;
 
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,9 +14,9 @@ public class OtpValidationService {
     private static final Logger logger = LoggerFactory.getLogger(OtpValidationService.class);
     private final OtpDao otpDao;
 
-    public OtpValidationService(OtpDao otpDao) {
-        this.otpDao = otpDao;
-        logger.info("OtpValidationService initialized");
+    public OtpValidationService(Connection connection) {
+        this.otpDao = new OtpDao(connection);
+        logger.debug("OtpValidationService initialized");
     }
 
     public boolean validateOtp(UUID userId, String operationId, String code) {
@@ -41,7 +42,7 @@ public class OtpValidationService {
         }
 
         otpDao.updateStatus(otp.id, "USED");
-        logger.info("OTP validated successfully for userId={}, operationId={}", userId, operationId);
+        logger.debug("OTP validated successfully for userId={}, operationId={}", userId, operationId);
         return true;
     }
 }
