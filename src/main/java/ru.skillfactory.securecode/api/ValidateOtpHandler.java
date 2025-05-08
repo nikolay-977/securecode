@@ -39,7 +39,6 @@ public class ValidateOtpHandler implements HttpHandler {
         }
 
         try {
-            // Проверка авторизации
             String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 logger.warn("Missing or invalid Authorization header");
@@ -55,7 +54,6 @@ public class ValidateOtpHandler implements HttpHandler {
                 return;
             }
 
-            // Чтение тела запроса
             BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8));
             StringBuilder requestBodyBuilder = new StringBuilder();
             String line;
@@ -71,7 +69,6 @@ public class ValidateOtpHandler implements HttpHandler {
 
             logger.info("Validating OTP for userId: {}, operationId: {}", userId, operationId);
 
-            // Сравнение userId с авторизованным пользователем
             if (!authUser.id.equals(userId)) {
                 logger.warn("Access denied: token userId {} does not match requested userId {}", authUser.id, userId);
                 sendResponse(exchange, 403, "{\"message\": \"Forbidden: Access denied.\"}");
